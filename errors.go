@@ -1,3 +1,8 @@
+// Package errors is an extension of and drop in replacement for the standard
+// library errors package. Multiple errors can be composed into a single error,
+// and single errors can be extended with new errors or with context. You can
+// also check whether any of the extensions or compositions contains a certain
+// error, allowing for more flexible error handling for complex processes.
 package errors
 
 import (
@@ -5,14 +10,15 @@ import (
 	"os"
 )
 
-// RichErr satisfies the error interface. Additionally, it remembers
-// individually all of the errors that have been added to the RichErr.
-type RichErr struct {
+// Error satisfies the error interface, and additionally keeps track of all
+// extensions and compositions that have happened to the underlying errors.
+type Error struct {
 	ErrSet []error
 }
 
-// Error returns the composed error string of the RichErr.
-func (r RichErr) Error() string {
+// Error returns the composed error string of the Error, clustering errors by
+// their composition and extension.
+func (r Error) Error() string {
 	s := "["
 	for i, err := range r.ErrSet {
 		if i != 0 {
@@ -23,10 +29,14 @@ func (r RichErr) Error() string {
 	return s + "]"
 }
 
-// Compose will compose all errors together into a single rich error,
-// preserving any rich context found along the way.
+// Compose will compose all errors together into a single error, remembering
+// each component error so that they can be checked for matches later using the
+// `Contains` function.
+//
+// Any `nil` input errors will be ignored. If all input errors are `nil`, then
+// `nil` will be returned.
 func Compose(errs ...error) error {
-	var r RichErr
+	var r Error
 	for _, err := range errs {
 		// Handle nil errors.
 		if err == nil {
@@ -41,7 +51,7 @@ func Compose(errs ...error) error {
 }
 
 // Contains will check whether the base error contains the cmp error. If the
-// base err is a RichErr, then it will check whether there is a match on any of
+// base err is a Error, then it will check whether there is a match on any of
 // the underlying errors.
 func Contains(base, cmp error) bool {
 	// Check for the easy edge cases.
@@ -53,7 +63,7 @@ func Contains(base, cmp error) bool {
 	}
 
 	switch v := base.(type) {
-	case RichErr:
+	case Error:
 		for _, err := range v.ErrSet {
 			if Contains(err, cmp) {
 				return true
@@ -65,7 +75,12 @@ func Contains(base, cmp error) bool {
 	}
 }
 
-// Extend will extend the second error with the first error,
+// Extend will extend the first error with the second error, remembering each
+// component error so that they can be checked for matches later using the
+// `Contains` function.
+//
+// Any `nil` input will be ignored. If both inputs are `nil, then `nil` will be
+// returned.
 func Extend(err, extension error) error {
 	// Check for nil edge cases. If both are nil, nil will be returned.
 	if err == nil {
@@ -75,10 +90,10 @@ func Extend(err, extension error) error {
 		return err
 	}
 
-	var r RichErr
+	var r Error
 	// Check the original error for richness.
 	switch v := err.(type) {
-	case RichErr:
+	case Error:
 		r = v
 	default:
 		r.ErrSet = []error{v}
@@ -86,7 +101,7 @@ func Extend(err, extension error) error {
 
 	// Check the extension error for richness.
 	switch v := extension.(type) {
-	case RichErr:
+	case Error:
 		r.ErrSet = append(v.ErrSet, r.ErrSet...)
 	default:
 		r.ErrSet = append([]error{v}, r.ErrSet...)
@@ -107,7 +122,7 @@ func IsOSNotExist(err error) bool {
 	}
 
 	switch v := err.(type) {
-	case RichErr:
+	case Error:
 		for _, err := range v.ErrSet {
 			if IsOSNotExist(err) {
 				return true
@@ -121,7 +136,7 @@ func IsOSNotExist(err error) bool {
 
 // New is a passthrough to the stdlib errors package, allowing
 // NebulousLabs/errors to be a drop in replacement for the standard library
-// errors.
+// errors package.
 func New(s string) error {
 	return errors.New(s)
 }

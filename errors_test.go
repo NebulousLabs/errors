@@ -13,9 +13,9 @@ var (
 	errFour  = errors.New("four")
 )
 
-// TestError checks the Error method of the RichErr.
+// TestError checks the Error method of the Error.
 func TestError(t *testing.T) {
-	r := RichErr{ErrSet: []error{errOne, errTwo}}
+	r := Error{ErrSet: []error{errOne, errTwo}}
 	if r.Error() != "[one; two]" {
 		t.Error("got the wrong error output:", r.Error())
 	}
@@ -78,7 +78,7 @@ func TestComposeAndExtendErrs(t *testing.T) {
 		t.Error("nils are being composed incorrectly")
 	}
 
-	// Check the composition of RichErrs.
+	// Check the composition of Errors.
 	err1 := Compose(errOne)
 	err2 := Compose(errTwo, errThree)
 	err3 := Compose(err1, err2)
