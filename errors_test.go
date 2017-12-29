@@ -136,3 +136,19 @@ func TestIsOSNotExist(t *testing.T) {
 		t.Error("After being buried, error is not  recognized as os.IsNotExist")
 	}
 }
+
+// TestAddContext checks that AddContext behaves as anticipated.
+func TestAddContext(t *testing.T) {
+	originalErr := errors.New("original error")
+	contextToNil := AddContext(nil, "some context")
+	if contextToNil != nil {
+		t.Error("adding context to a nil error should result in nil")
+	}
+	contextToErr := AddContext(originalErr, "some context")
+	if contextToErr.Error() != "[some context; original error]" {
+		t.Error("unexpected result when adding context:", contextToErr)
+	}
+	if !Contains(contextToErr, originalErr) {
+		t.Error("Contains function not operating correctly on error where context was added")
+	}
+}
