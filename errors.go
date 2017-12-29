@@ -29,6 +29,15 @@ func (r Error) Error() string {
 	return s + "]"
 }
 
+// AddContext will add a string context to an error if the error is not nil. If
+// the error is nil, then nil will be returned regardless of the context.
+func AddContext(err error, context string) error {
+	if err == nil {
+		return nil
+	}
+	return Extend(err, New(context))
+}
+
 // Compose will compose all errors together into a single error, remembering
 // each component error so that they can be checked for matches later using the
 // `Contains` function.
